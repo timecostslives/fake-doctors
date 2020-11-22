@@ -1,6 +1,6 @@
 import json
 import os
-import ntpath
+# import ntpath
 from collections import defaultdict
 
 import wget
