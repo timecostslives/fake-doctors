@@ -26,28 +26,14 @@ class Annotation:
         self.name = name
         self.coords = coords
 
-    @property
-    def name(self) -> str:
-        '''Getter of property *name*'''
-        return self.name
-
-    @property
-    def coords(self) -> np.ndarray:
-        '''Getter of property *coords*'''
+    def coordinates(self) -> None:
+        '''Returns annotation coordinates; vertices'''
         return self.coords
-
-    @name.setter
-    def name(self, name: str) -> None:
-        self.name = name
-
-    @coords.setter
-    def coords(self, coords: np.ndarray) -> None:
-        self.coords = coords
 
     def __repr__(self) -> str:
         return self.name
 
-    def does_contain(self, points: list) -> Sequence[bool]: # Warn -> repair to coord: tuple
+    def does_contain(self, points: list) -> Sequence[bool]:
         '''Check if the Annotation object contains the given coordinate.
 
         - Args
