@@ -12,29 +12,29 @@ from skimage.color import rgb2hsv
 def generate_roi_mask(wsi_path_in: str, mask_path_out: str,
                       wsi_level: int=6, min_rgb: int=50) -> None:
     '''Generate binary mask to extract roi(tissue region) from whole slide image.
-    
+
     - Args
         wsi_path_in:
         wsi_level:
         mask_path_out:
         min_rgb:
-    
+
     - Returns
         None
     '''
-    
+
     logging.basicConfig(level=logging.INFO)
 
     slide = OpenSlide(wsi_path_in)
     slide_width, slide_height = slide.level_dimensions[wsi_level] # (1) shape of (width, height)
-    
+
     # Starting point to read(crop) image
     start_x, start_y = 0, 0 # top left coordinate of whole slide image
-    
+
     image = slide.read_region(location=(start_x, start_y),
                               level=wsi_level,
                               size=(slide_width, slide_height))
-    
+
     rgb_image = image.convert('RGB')
     rgb_image = np.transpose(rgb_image, axes=[1, 0, 2]) # shape of (height, width, channels); transpose of (1)
 
@@ -44,28 +44,28 @@ def generate_roi_mask(wsi_path_in: str, mask_path_out: str,
     g_channel = rgb_image[:, :, 1]
     b_channel = rgb_image[:, :, 2]
     h_channel = hsv_image[:, :, 1]
-    
+
     r_threshold = skimage.filters.threshold_otsu(r_channel)
     g_threshold = skimage.filters.threshold_otsu(g_channel)
     b_threshold = skimage.filters.threshold_otsu(b_channel)
     h_threshold = skimage.filters.threshold_otsu(h_channel)
-    
+
     r_channel_mask = r_channel > r_threshold
     g_channel_mask = g_channel > g_threshold
     b_channel_mask = b_channel > b_threshold
-    
+
     rgb_tissue_mask = r_channel_mask & b_channel_mask & g_channel_mask
     rgb_tissue_mask = np.logical_not(rgb_tissue_mask)
-    
+
     h_tissue_mask = h_channel > h_threshold
-    
+
     min_r_mask = r_channel > min_rgb
     min_g_mask = g_channel > min_rgb
     min_b_mask = b_channel > min_rgb
-    
+
     # ROI: Tissue reion in the slide
     roi_mask = h_tissue_mask & rgb_tissue_mask & min_r_mask & min_g_mask & min_b_mask
-    
+
     np.save(mask_path_out, roi_mask)
 
 
@@ -104,34 +104,70 @@ def mask_to_image(mask_path_in: str, save_dir_out: str,
 if __name__ == '__main__':
     ROOT_DIR = os.path.abspath('.')
     DATA_DIR = '/ssd-ext/dataset'
-    WSI_DIR = os.path.join(DATA_DIR, 'train')
+    TRAIN_WSI_DIR = os.path.join(DATA_DIR, 'train')
+    VALID_WSI_DIR = os.path.join(DATA_DIR, 'valid')
     MASKS_DIR = os.path.join(ROOT_DIR, 'results', 'masks')
     IMAGES_DIR = os.path.join(MASKS_DIR, 'images')
 
-    # Generate tumor slide masks
-    tumor_wsi_dir = os.path.join(WSI_DIR, 'tumor')
-    tumor_wsi_fnames = os.listdir(tumor_wsi_dir)
-    tumor_wsi_fnames = sorted(tumor_wsi_fnames)
-    for fname in tumor_wsi_fnames:
-        wsi_path = os.path.join(tumor_wsi_dir, fname)
+    os.makedirs(MASKS_DIR, exist_ok=True)
+
+    # Generate training tumor slide masks
+    train_tumor_wsi_dir = os.path.join(TRAIN_WSI_DIR, 'tumor')
+    train_tumor_wsi_fnames = os.listdir(train_tumor_wsi_dir)
+    train_tumor_wsi_fnames = sorted(train_tumor_wsi_fnames)
+    for fname in train_tumor_wsi_fnames:
+        wsi_path = os.path.join(train_tumor_wsi_dir, fname)
 
         patient_id = fname.rstrip('.tif')
 
         mask_fname = f'{patient_id}.npy'
-        if not os.path.exists(MASKS_DIR):
-            os.mkdir(MASKS_DIR)
-            
+        mask_fnames = os.listdir(MASKS_DIR)
         mask_path = os.path.join(MASKS_DIR, mask_fname)
-        generate_roi_mask(wsi_path_in=wsi_path,
-                          mask_path_out=mask_path)
-        print(f'Mask of {patient_id} was saved at {mask_path}')
+        if mask_fname not in mask_fnames:
+            generate_roi_mask(wsi_path_in=wsi_path,
+                            mask_path_out=mask_path)
+            print(f'Mask of {patient_id} was saved at {MASKS_DIR}')
 
-    # Generate normal slide masks
-    normal_wsi_dir = os.path.join(WSI_DIR, 'normal')
-    normal_wsi_fnames = os.listdir(normal_wsi_dir)
-    normal_wsi_fnames = sorted(normal_wsi_fnames)
-    for fname in normal_wsi_fnames:
-        wsi_path = os.path.join(normal_wsi_dir, fname)
+    # Generate training normal slide masks
+    train_normal_wsi_dir = os.path.join(TRAIN_WSI_DIR, 'normal')
+    train_normal_wsi_fnames = os.listdir(train_normal_wsi_dir)
+    train_normal_wsi_fnames = sorted(train_normal_wsi_fnames)
+    for fname in train_normal_wsi_fnames:
+        wsi_path = os.path.join(train_normal_wsi_dir, fname)
+
+        patient_id = fname.rstrip('.tif')
+
+        mask_fname = f'{patient_id}.npy'
+        mask_fnames = os.listdir(MASKS_DIR)
+        mask_path = os.path.join(MASKS_DIR, mask_fname)
+        if mask_fname not in mask_fnames:
+            generate_roi_mask(wsi_path_in=wsi_path,
+                            mask_path_out=mask_path)
+        print(f'Mask of {patient_id} was saved at {MASKS_DIR}')
+
+    # Generate validation tumor slide masks
+    valid_tumor_wsi_dir = os.path.join(VALID_WSI_DIR, 'tumor')
+    valid_tumor_wsi_fnames = os.listdir(valid_tumor_wsi_dir)
+    valid_tumor_wsi_fnames = sorted(valid_tumor_wsi_fnames)
+    for fname in valid_tumor_wsi_fnames:
+        wsi_path = os.path.join(valid_tumor_wsi_dir, fname)
+
+        patient_id = fname.rstrip('.tif')
+
+        mask_fname = f'{patient_id}.npy'
+        mask_fnames = os.listdir(MASKS_DIR)
+        mask_path = os.path.join(MASKS_DIR, mask_fname)
+        if mask_fname not in mask_fnames:
+            generate_roi_mask(wsi_path_in=wsi_path,
+                            mask_path_out=mask_path)
+            print(f'Mask of {patient_id} was saved at {MASKS_DIR}')
+
+    # Generate validation normal slide masks
+    valid_normal_wsi_dir = os.path.join(VALID_WSI_DIR, 'normal')
+    valid_normal_wsi_fnames = os.listdir(valid_normal_wsi_dir)
+    valid_normal_wsi_fnames = sorted(valid_normal_wsi_fnames)
+    for fname in valid_normal_wsi_fnames:
+        wsi_path = os.path.join(valid_normal_wsi_dir, fname)
 
         patient_id = fname.rstrip('.tif')
 
@@ -139,7 +175,7 @@ if __name__ == '__main__':
         mask_path = os.path.join(MASKS_DIR, mask_fname)
         generate_roi_mask(wsi_path_in=wsi_path,
                           mask_path_out=mask_path)
-        print(f'Mask of {patient_id} was saved at {mask_path}')
+        print(f'Mask of {patient_id} was saved at {MASKS_DIR}')
 
     # Convert the masks to images and save them all
     mask_fnames = os.listdir(MASKS_DIR)
