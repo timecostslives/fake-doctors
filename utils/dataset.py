@@ -167,6 +167,7 @@ class Camelyon16:
             valid_normal_wsi_path = os.path.join(valid_normal_wsi_dir, fname) # to here
             shutil.move(train_normal_wsi_path, valid_normal_wsi_path)
 
+
 if __name__ == '__main__':
 
     ROOT_DIR = os.path.abspath('.')
@@ -178,5 +179,5 @@ if __name__ == '__main__':
                             wsi_dir_out=WSI_DIR)
     downloader.download_trainset()
     downloader.split_train_valid(ratio=0.2)
-    
+
     downloader.download_testset()
