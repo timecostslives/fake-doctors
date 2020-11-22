@@ -27,6 +27,7 @@ class Camelyon16:
         self.valid_wsi_dir = os.path.join(self.wsi_dir_out, 'valid')
         self.test_wsi_dir = os.path.join(self.wsi_dir_out, 'test') 
 
+        # Do not use normal_86.tif, normal_144.tif
         self.train_wsi_range_dict = {
             'tumor': (1, 112),
             'normal': (1, 161)
@@ -47,7 +48,7 @@ class Camelyon16:
             train_wsi_urls_dict = defaultdict(list)
             for (class_, wsi_range) in self.train_wsi_range_dict.items():
                 for i in range(*wsi_range):
-                    # We do not use normal_86.tif, normal_144.tif
+                    # Do not use normal_86.tif, normal_144.tif
                     if (class_ == 'normal') and (i in (86, 144)):
                         continue
 
