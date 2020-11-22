@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 from collections import defaultdict
 
 import wget
@@ -122,6 +123,53 @@ class Camelyon16:
                 print(f'Start downloading {wsi_fname}')
                 wget.download(url=url, out=self.test_wsi_dir)
                 print('Completed!')
+
+    def split_train_valid(self, ratio: float = 0.2) -> None:
+        '''Split training wsi into trainset/validset according to the given ratio
+        
+        - Args
+            ratio: Ratio to split the training dataset; percentage of validation set
+
+        - Returns
+            None
+        '''
+        # Split training tumor wsi into train/valid
+        train_tumor_wsi_dir = os.path.join(self.train_wsi_dir, 'tumor')
+        valid_tumor_wsi_dir = os.path.join(self.valid_wsi_dir, 'tumor')
+        train_tumor_wsi_fnames = os.listdir(train_tumor_wsi_dir)
+        train_tumor_wsi_fnames = sorted(train_tumor_wsi_fnames)
+
+        num_train_tumor_wsi = len(train_tumor_wsi_fnames)
+        num_valid_tumor_wsi = round(num_train_tumor_wsi * ratio)
+
+        valid_tumor_start = num_train_tumor_wsi - num_valid_tumor_wsi 
+        valid_tumor_wsi_fnames = train_tumor_wsi_fnames[valid_tumor_start:]
+        # Move validation wsi from *train_tumor_wsi_dir* to  *valid_tumor_wsi_dir*
+        for fname in valid_tumor_wsi_fnames:
+            train_tumor_wsi_path = os.path.join(train_tumor_wsi_dir, fname) # from here
+            valid_tumor_wsi_path = os.path.join(valid_tumor_wsi_dir, fname) # to here
+            shutil.move(train_tumor_wsi_path, valid_tumor_wsi_path)
+
+        # Split training normal wsi into train/valid
+        train_normal_wsi_dir = os.path.join(self.train_wsi_dir, 'normal')
+        valid_normal_wsi_dir = os.path.join(self.valid_wsi_dir, 'normal')
+        train_normal_wsi_fnames = os.listdir(train_normal_wsi_dir)
+        train_normal_wsi_fnames = sorted(train_normal_wsi_fnames)
+
+        num_train_normal_wsi = len(train_normal_wsi_fnames)
+        num_valid_normal_wsi = round(num_train_normal_wsi * ratio)
+
+        valid_normal_start = num_train_normal_wsi - num_valid_normal_wsi
+        valid_normal_wsi_fnames = train_normal_wsi_fnames[valid_normal_start:]
+        # Move validation wsi from *train_normal_wsi_dir* to *valid_normal_wsi_dir*
+        for fname in valid_normal_wsi_fnames:
+            train_normal_wsi_path = os.path.join(train_normal_wsi_dir, fname) # from here
+            valid_normal_wsi_path = os.path.join(valid_normal_wsi_dir, fname) # to here
+            shutil.move(train_normal_wsi_path, valid_normal_wsi_path)
+
+
+        
+
         
 
 if __name__ == '__main__':
