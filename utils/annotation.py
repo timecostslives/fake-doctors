@@ -15,10 +15,11 @@ class Annotation:
 
     def __init__(self, name: str, coords: np.ndarray) -> None:
         '''Initialize a Annotation object.
-        
+
         - Args
             name: Name of the Annotation object
-            coords: Numpy array containing coordinates [(x1,y1), (x2,y2), ... ,(xn,yn)] of shape (n, 2)
+            coords: Numpy array containing coordinates;
+                    [(x1,y1), (x2,y2), ... ,(xn,yn)] of shape (n, 2)
 
         - Returns
             None
@@ -30,7 +31,7 @@ class Annotation:
     def name(self) -> str:
         '''Getter of property *name*'''
         return self.name
-    
+
     @property
     def coords(self) -> np.ndarray:
         '''Getter of property *coords*'''
@@ -49,7 +50,7 @@ class Annotation:
 
     def does_contain(self, points: list) -> Sequence[bool]: # Warn -> repair to coord: tuple
         '''Check if the Annotation object contains the given coordinate.
-        
+
         - Args
             points: A list of points to perform the test
 
@@ -57,14 +58,9 @@ class Annotation:
             True if the given coorindate is inside the Annotation object,
             False otherwise
         '''
-        return points_in_poly(points, self.coords) # Warn -> repair to [coord] | points_in_poly(points, self.coords)[0]
+        return points_in_poly(points, self.coords)
 
-    # @property
-    # def coordinates(self) -> np.ndarray:
-    #     '''Getter of '''
-    #     return self.coords
 
-    
 class LesionAnnotations:
     '''Represents an annotation drawn on a whole slide image.'''
 
@@ -77,7 +73,7 @@ class LesionAnnotations:
 
         with open(annot_path, 'r', encoding='utf-8') as f:
             lesion_annots = json.load(f)
-        
+
         # Parse positive annotations
         self.pos_annots = []
         for annot in lesion_annots['pos']:
@@ -94,9 +90,15 @@ class LesionAnnotations:
             neg_annot = Annotation(name=annot_name, coords=coords)
             self.neg_annots.append(neg_annot)
 
-    def filter_tumor_coords(self, save_path: str, points: np.ndarray, is_pos: bool = True) -> np.ndarray:
+        self.annots_dict = {
+            'pos': self.pos_annots,
+            'neg': self.neg_annots,
+        }
+
+    def filter_tumor_coords(self, save_path: str,
+                            points: np.ndarray, is_pos: bool = True) -> np.ndarray:
         '''Filter tumor coords from the given points.
-        
+
         - Args
             save_dir: Path to json file to save the tumor coordinates
             points: Roi points to check if each of them is a tumor
@@ -105,8 +107,6 @@ class LesionAnnotations:
         - Returns
             A numpy array which contains tumor coordinates; points inside annotations
         '''
-        # tumor_coords_mask = np.zeros_like(points, dtype=bool)
-        
         if is_pos:
             annots = self.pos_annots
         else:
@@ -115,43 +115,22 @@ class LesionAnnotations:
         tumor_coords_dict = defaultdict(list)
         tumor_coords_dict['patient_id'] = self.patient_id
         tumor_coords_dict['num_coords'] = 0
-        # entire_tumor_coords = []
+
         for annot in annots:
             tumor_coords_mask = annot.does_contain(points)
-            # print(f'tumor_coords_mask: {tumor_coords_mask}')
             tumor_coords = points[tumor_coords_mask]
             tumor_coords = tumor_coords.tolist()
-            # print(f'tumor_coords: {tumor_coords}')
             tumor_coords_dict['tumor_coords'].extend(tumor_coords)
             tumor_coords_dict['num_coords'] += len(tumor_coords)
-            # entire_tumor_coords.extend(tumor_coords)
-            # print(f'entire_tumor_coords: {entire_tumor_coords}')        
-            
-        # save_path = os.path.join(save_dir, self.annot_fname)
+
         with open(save_path, 'w+', encoding='utf-8') as f:
             json.dump(tumor_coords_dict, f, indent=4)
-            # for coord in entire_tumor_coords:
-            #     x_coord, y_coord = coord
-            #     f.write(f'{x_coord},{y_coord}\n')
-            #     print(f'{x_coord}, {y_coord} were written in {save_path}')
 
-            # for (i, point) in enumerate(points):
-            #     print(f'Testing point: {point} {i}/{num_points}')
-            #     for annot in annots:
-            #         if annot.deos_contain(points=[point]):
-
-            #             tumor_coords_mask[i] = True
-            #         else:
-            #             tumor_coords_mask[i] = False
-            
-
-
-        # return entire_tumor_coords
         return tumor_coords_dict['tumor_coords']
 
-    def does_contain(self, points: Sequence[tuple], is_pos: bool = True) -> bool: # Warn: repair to coord: tuple
+    def does_contain(self, points: Sequence[tuple], is_pos: bool = True) -> bool:
         '''Check if the Annotation object contains the given coordinate.
-        
+
         - Args
             points: A list of points to perform the test
             is_pos: True if to check positive tumor, False otherwise
@@ -161,28 +140,19 @@ class LesionAnnotations:
             False otherwise
         '''
         num_points = len(points)
-        print(f'Number of points: {num_points}')
-        # coords_mask = np.zeros_like(points, dtype=bool)
+
         coords_mask_dict = defaultdict(list)
         if num_points > 1:
             if is_pos:
                 annots = self.pos_annots
             else:
                 annots = self.neg_annots
-            
+
             for annot in annots:
                 coords_mask = annot.does_contain(points=points)
                 coords_mask_dict[annot.name] = coords_mask
-            # for (i, point) in enumerate(points):
-            #     print(f'Testing point: {point} {i}/{num_points}')
-            #     for annot in annots:
-            #         if annot.does_contain(points=[point]):
-            #             coords_mask[i] = True
-            #         else:
-            #             coords_mask[i] = False
-            # return coords_mask
+
             return coords_mask_dict
-           
 
         if is_pos:
             annots = self.pos_annots
@@ -192,44 +162,39 @@ class LesionAnnotations:
         for annot in annots:
             if annot.does_contain(points=points): # Warn: repair to coord=coord
                 return True
-            
+
         return False
 
     def __repr__(self):
         return self.annot_fname
 
     @property
-    def coordinates(self, is_pos: bool) -> list:
+    def coords(self) -> dict:
         '''Return the entire coordinates of shape (num_annotations, 2)
 
         - Args
             is_pos: True if the target annotations are positive, False otherwise
 
         - Returns
-            A list containing every coordinates of each annotation
+            A dict containing every positive/negative coordinates of each annotation
         '''
-        if is_pos:
-            pos_coords = [annot.coords for annot in self.pos_annots]
-            return pos_coords
-        else:
-            neg_coords = [annot.coords for annot in self.neg_annots]
-            return neg_coords
+        pos_coords = [annot.coords for annot in self.pos_annots]
+        neg_coords = [annot.coords for annot in self.neg_annots]
+        coords_dict = {
+            'pos': pos_coords,
+            'neg': neg_coords,
+        }
+
+        return coords_dict
 
     @property
-    def annotations(self, is_pos: bool) -> Sequence[list]:
+    def annots(self) -> dict:
         '''Return the entire annotations.
 
-        - Args
-            is_pos: True if the target annotations are positive, False otherwise
-
         - Returns
-            A list contaning every positive/negative annotations
+            A dict contaning every positive/negative annotations
         '''
-        if is_pos:
-            return self.pos_annots
-        else:
-            return self.neg_annots
-
+        return self.annots_dict
 
 
 def xml_to_json(xml_path_in: str, json_path_out: str) -> None:
@@ -290,7 +255,7 @@ def xml_to_json(xml_path_in: str, json_path_out: str) -> None:
             'name': f'Annotation{annot_name}',
             'coords': coords,
         })
-    
+
     # Parse negative annotations
     for annot in neg_annots:
         coords = annot.findall('./Coordinates/Coordinate')
@@ -313,12 +278,10 @@ def xml_to_json(xml_path_in: str, json_path_out: str) -> None:
         coords = np.c_[x_coords, y_coords]
         coords = coords.tolist() # because np.ndarray is not json serializable
         annot_name = annot.attrib['Name']
-        # annot_name = f'Annotation{annot_name}' if 'Annotation' not in annot_name else annot_name
         if 'Annotation' not in annot_name:
             annot_name = f'Annotation{annot_name}'
 
         json_annot['neg'].append({
-            # 'name': f'Annotation{annot_name}',
             'name': annot_name,
             'coords': coords,
         })
@@ -329,16 +292,39 @@ def xml_to_json(xml_path_in: str, json_path_out: str) -> None:
 
 if __name__ == '__main__':
     ROOT_DIR = os.path.abspath('.')
-    ANNOT_DIR = os.path.join(ROOT_DIR, 'annotations')
-    XML_ANNOT_DIR = os.path.join(ANNOT_DIR, 'xml')
-    JSON_ANNOT_DIR = os.path.join(ANNOT_DIR, 'json')
+    ANNOTS_DIR = os.path.join(ROOT_DIR, 'annots')
+    TRAIN_ANNOTS_DIR = os.path.join(ANNOTS_DIR, 'train')
+    TRAIN_XML_ANNOTS_DIR = os.path.join(TRAIN_ANNOTS_DIR, 'xml')
+    TRAIN_JSON_ANNOTS_DIR = os.path.join(TRAIN_ANNOTS_DIR, 'json')
 
-    if not os.path.exists(JSON_ANNOT_DIR):
-        os.mkdir(JSON_ANNOT_DIR)
+    TEST_ANNOTS_DIR = os.path.join(ANNOTS_DIR, 'test')
+    TEST_XML_ANNOTS_DIR = os.path.join(TEST_ANNOTS_DIR, 'xml')
+    TEST_JSON_ANNOTS_DIR = os.path.join(TEST_ANNOTS_DIR, 'json')
 
-    xml_annot_fnames = os.listdir(XML_ANNOT_DIR)
-    xml_annot_fnames = [fname.strip('.xml') for fname in xml_annot_fnames]
-    for fname in xml_annot_fnames:
-        xml_path = os.path.join(XML_ANNOT_DIR, f'{fname}.xml')
-        json_path = os.path.join(JSON_ANNOT_DIR, f'{fname}.json')
-        xml_to_json(xml_path_in=xml_path, json_path_out=json_path)
+    # Convert training annotations
+    os.makedirs(TRAIN_JSON_ANNOTS_DIR, exist_ok=True)
+    train_json_annot_fnames = os.listdir(TRAIN_JSON_ANNOTS_DIR)
+
+    train_xml_annot_fnames = os.listdir(TRAIN_XML_ANNOTS_DIR)
+    train_xml_annot_fnames = [fname.strip('.xml') for fname in train_xml_annot_fnames]
+    train_xml_annot_fnames = sorted(train_xml_annot_fnames)
+    for fname in train_xml_annot_fnames:
+        if f'{fname}.json' not in train_json_annot_fnames:
+            xml_path = os.path.join(TRAIN_XML_ANNOTS_DIR, f'{fname}.xml')
+            json_path = os.path.join(TRAIN_JSON_ANNOTS_DIR, f'{fname}.json')
+            xml_to_json(xml_path_in=xml_path, json_path_out=json_path)
+            print(f'Converted {fname}.xml to {fname}.json')
+
+    # Convert test annotations
+    os.makedirs(TEST_JSON_ANNOTS_DIR, exist_ok=True)
+    test_json_annot_fnames = os.listdir(TEST_JSON_ANNOTS_DIR)
+
+    test_xml_annot_fnames = os.listdir(TEST_XML_ANNOTS_DIR)
+    test_xml_annot_fnames = [fname.strip('.xml') for fname in test_xml_annot_fnames]
+    test_xml_annot_fnames = sorted(test_xml_annot_fnames)
+    for fname in test_xml_annot_fnames:
+        if f'{fname}.json' not in test_json_annot_fnames:
+            xml_path = os.path.join(TEST_XML_ANNOTS_DIR, f'{fname}.xml')
+            json_path = os.path.join(TEST_JSON_ANNOTS_DIR, f'{fname}.json')
+            xml_to_json(xml_path_in=xml_path, json_path_out=json_path)
+            print(f'Converted {fname}.xml to {fname}.json')
