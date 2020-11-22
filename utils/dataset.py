@@ -27,20 +27,9 @@ class Camelyon16:
         self.valid_wsi_dir = os.path.join(self.wsi_dir_out, 'valid')
         self.test_wsi_dir = os.path.join(self.wsi_dir_out, 'test') 
 
-        # Do not use normal_86.tif, normal_144.tif
-        # self.train_wsi_range_dict = {
-        #     'tumor': (1, 89),
-        #     'normal': (1, 128),
-        # }
-
         self.train_wsi_range_dict = {
             'tumor': (1, 112),
             'normal': (1, 161)
-        }
-
-        self.valid_wsi_range_dict = {
-            'tumor': (89, 112),
-            'normal': (128, 161),
         }
 
         # Do not use test_049.tif; the same as tumor_036.tif
