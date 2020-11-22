@@ -17,7 +17,7 @@ class PatchSampler:
     def __init__(self, wsi_dir_in: str, masks_dir_in: str, annots_dir_in: str,
                  tumor_coords_dir_in: str, normal_coords_dir_in: str, patches_dir_out: str) -> None:
         '''Initialize the PatchSampler
-        
+
         -Args
             wsi_dir_in:
             masks_dir_in:
@@ -42,18 +42,16 @@ class PatchSampler:
 
         self.tumor_wsi_fnames = os.listdir(self.tumor_wsi_dir_in)
         self.normal_wsi_fnames = os.listdir(self.normal_wsi_dir_in)
-        # self.mask_fnames = os.listdir(self.masks_dir_in)
-        # self.annots = os.listdir(self.annots_dir_in)
 
     def sample_patches(self, num_patches: int, wsi_level: int = 0, patch_size: int = 300) -> None:
-        if not os.path.exists(self.patches_dir_out):
-            os.mkdir(self.patches_dir_out)
+
+        os.makedirs(self.patches_dir_out, exist_ok=True)
 
         # Path to the .json file to save the list of sampled patches; (patient_id,coord_x,coord_y)
         patches_list_path = os.path.join(self.patches_dir_out, 'patches_list.json')
         if not os.path.exists(patches_list_path):
             patch_fnames = set()
-            
+
             count = 0
             while count < num_patches:
                 picked_class = random.choice(self.classes)
@@ -61,15 +59,14 @@ class PatchSampler:
                     picked_wsi_fname = random.choice(self.tumor_wsi_fnames)
                     picked_patient_id = picked_wsi_fname.rstrip('.tif')
                     picked_wsi_path = os.path.join(self.tumor_wsi_dir_in, picked_wsi_fname)
-                    
+
                     picked_mask_fname = f'{picked_patient_id}.npy'
                     picked_mask_path = os.path.join(self.masks_dir_in, picked_mask_fname)
 
                     picked_annot_fname = f'{picked_patient_id}.json'
                     picked_annot_path = os.path.join(self.annots_dir_in, picked_annot_fname)
 
-                    if not os.path.exists(self.tumor_coords_dir_in):
-                        os.mkdir(self.tumor_coords_dir_in)
+                    os.makedirs(self.tumor_coords_dir_in, exist_ok=True)
 
                     picked_coords_fname = f'{picked_patient_id}.json'
                     picked_coords_path = os.path.join(self.tumor_coords_dir_in, picked_coords_fname)
@@ -87,8 +84,7 @@ class PatchSampler:
                     picked_mask_fname = f'{picked_patient_id}.npy'
                     picked_mask_path = os.path.join(self.masks_dir_in, picked_mask_fname)
 
-                    if not os.path.exists(self.normal_coords_dir_in):
-                        os.mkdir(self.normal_coords_dir_in)
+                    os.makedirs(self.normal_coords_dir_in, exist_ok=True)
 
                     picked_coords_fname = f'{picked_patient_id}.json'
                     picked_coords_path = os.path.join(self.normal_coords_dir_in, picked_coords_fname)
@@ -187,20 +183,20 @@ class PatchSampler:
             with open(coords_path, 'r', encoding='utf-8') as f:
                 tumor_coords_dict = json.load(f)
                 tumor_coords = tumor_coords_dict['tumor_coords']
-        
+
         picked_tumor_coord = random.choice(tumor_coords)
-        
+
         return picked_tumor_coord
 
     def sample_normal_coord(self, coords_path: str, wsi_path: str,
                             mask_path: str, wsi_level: int = 0) -> tuple:
         '''Sample a center coordinate of a normal patch from uniform distribution.
-    
+
         - Args
             coords_path: Path to the pre-sampled normal coordinates
             mask_path: Path to the binary mask of wsi
             wsi_path: Path to the wsi
-    
+
         - Returns
             A center coordinate of a normal patch; tuple of int
         '''
@@ -247,7 +243,7 @@ class PatchSampler:
 
     def scale_coord(self, coord: tuple, resolution: int) -> tuple:
         '''Scale the given coordinates correspoding resolution.
-    
+
         - Args
             coords: A tuple of coordinates to scale
             resolution: Resolution to scale coordinates
@@ -261,40 +257,42 @@ class PatchSampler:
 
 if __name__ == '__main__':
     ROOT_DIR = os.path.abspath('.')
-    DATA_DIR = r'/ssd-ext/dataset'
-    TRAIN_WSI_DIR = os.path.join(DATA_DIR, 'train')
-    VALID_WSI_DIR = os.path.join(DATA_DIR, 'valid')
-    MASKS_DIR = os.path.join(ROOT_DIR, 'results', 'masks')
-    ANNOTS_DIR = os.path.join(ROOT_DIR, 'annots', 'json')
-    PATCHES_DIR = '/home/carpenter/patches'
-    TUMOR_COORDS_DIR = '/home/carpenter/tumor_coords'
-    NORMAL_COORDS_DIR = '/home/carpenter/normal_coords'
-    TRAIN_PATCHES_DIR = '/home/carpenter/train_patches'
-    VALID_PATCHES_DIR = '/home/carpenter/valid_patches'
-    # PATCH_SIZE = 256
 
-    # wsi_dir_in = os.path.join(DATA_DIR, 'train')
-    # annots_dir_in = os.path.join(ROOT_DIR, 'annots', 'json')
-    # tumor_coords_dir_in = '/home/carpenter/tumor_coords'
-    # normal_coords_dir_in = '/home/carpenter/normal_coords'
-    # patches_dir_out = '/home/carpenter/patches'
+    WSI_DIR = r'/ssd-ext/dataset'
+    TRAIN_WSI_DIR = os.path.join(WSI_DIR, 'train')
+    VALID_WSI_DIR = os.path.join(WSI_DIR, 'valid')
+
+    MASKS_DIR = os.path.join(ROOT_DIR, 'results', 'masks')
+    ANNOTS_DIR = os.path.join(ROOT_DIR, 'annots')
+    TRAIN_ANNOTS_DIR = os.path.join(ANNOTS_DIR, 'train', 'json')
+
+    PATCHES_DIR = os.path.join(ROOT_DIR, 'data')
+    TRAIN_PATCHES_DIR = os.path.join(PATCHES_DIR, 'train')
+    VALID_PATCHES_DIR = os.path.join(PATCHES_DIR, 'valid')
+
+    CACHES_DIR = os.path.join(ROOT_DIR, 'caches')
+    COORDS_DIR = os.path.join(CACHES_DIR, 'coordinates')
+    TUMOR_COORDS_DIR = os.path.join(COORDS_DIR, 'tumor')
+    NORMAL_COORDS_DIR = os.path.join(COORDS_DIR, 'normal')
+
+    NUM_TRAIN_PATCHES = 10000
+    NUM_VALID_PATCHES = 10000
 
     train_patch_sampler = PatchSampler(wsi_dir_in=TRAIN_WSI_DIR,
                                        masks_dir_in=MASKS_DIR,
-                                       annots_dir_in=ANNOTS_DIR,
+                                       annots_dir_in=TRAIN_ANNOTS_DIR,
                                        tumor_coords_dir_in=TUMOR_COORDS_DIR,
                                        normal_coords_dir_in=NORMAL_COORDS_DIR,
                                        patches_dir_out=TRAIN_PATCHES_DIR)
-    
-    num_train_patches = 10000
-    train_patch_sampler.sample_patches(num_patches=num_train_patches)
+
+    train_patch_sampler.sample_patches(num_patches=NUM_TRAIN_PATCHES)
 
     valid_patch_sampler = PatchSampler(wsi_dir_in=VALID_WSI_DIR,
                                        masks_dir_in=MASKS_DIR,
-                                       annots_dir_in=ANNOTS_DIR,
+                                       annots_dir_in=TRAIN_ANNOTS_DIR,
                                        tumor_coords_dir_in=TUMOR_COORDS_DIR,
                                        normal_coords_dir_in=NORMAL_COORDS_DIR,
                                        patches_dir_out=VALID_PATCHES_DIR)
-    num_valid_patches = 10000
-    valid_patch_sampler.sample_patches(num_patches=num_valid_patches)
-    
+                                       
+    valid_patch_sampler.sample_patches(num_patches=NUM_VALID_PATCHES)
+
