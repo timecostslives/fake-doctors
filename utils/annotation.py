@@ -328,10 +328,13 @@ def xml_to_json(xml_path_in: str, json_path_out: str) -> None:
 
 
 if __name__ == '__main__':
-    ROOT_DIR = os.path.abspath('..')
+    ROOT_DIR = os.path.abspath('.')
     ANNOT_DIR = os.path.join(ROOT_DIR, 'annotations')
     XML_ANNOT_DIR = os.path.join(ANNOT_DIR, 'xml')
     JSON_ANNOT_DIR = os.path.join(ANNOT_DIR, 'json')
+
+    if not os.path.exists(JSON_ANNOT_DIR):
+        os.mkdir(JSON_ANNOT_DIR)
 
     xml_annot_fnames = os.listdir(XML_ANNOT_DIR)
     xml_annot_fnames = [fname.strip('.xml') for fname in xml_annot_fnames]
