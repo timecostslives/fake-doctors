@@ -11,7 +11,7 @@ class Camelyon16:
 
     def __init__(self, urls_dir_in: str, wsi_dir_out: str) -> None:
         '''Initialize Camelyon16.
-        
+
         - Args
             urls_dir_in: Path to the directory to cache the wsi download urls
             wsi_dir_out: Path to the directory to save the downloaded wsi
@@ -40,7 +40,7 @@ class Camelyon16:
         '''Download Camelyon16 training dataset'''
 
         os.makedirs(self.urls_dir_in, exist_ok=True)
-        
+
         # Path to the url cache file(train_wsi_urls.json) to downlod training wsi
         train_wsi_urls_path = os.path.join(self.urls_dir_in, 'train_wsi_urls.json')
         if not os.path.exists(train_wsi_urls_path):
@@ -61,7 +61,7 @@ class Camelyon16:
         # if-statement ended
         with open(train_wsi_urls_path, 'r', encoding='utf-8') as f:
             train_wsi_urls_dict = json.load(f)
-        
+
         os.makedirs(self.train_wsi_dir, exist_ok=True)
         # Wsi file names in train wsi directory
         wsi_fnames = os.listdir(self.train_wsi_dir)
@@ -97,7 +97,6 @@ class Camelyon16:
             with open(test_wsi_urls_path, 'w+', encoding='utf-8') as f:
                 json.dump(test_wsi_urls_dict, f, indent=4)
         # outer if-statement ended
-        
 
         with open(test_wsi_urls_path, 'r', encoding='utf-8') as f:
             test_wsi_urls_dict = json.load(f)
@@ -116,7 +115,7 @@ class Camelyon16:
 
     def split_train_valid(self, ratio: float = 0.2) -> None:
         '''Split training wsi into trainset/validset according to the given ratio
-        
+
         - Args
             ratio: Ratio to split the training dataset; percentage of validation set
 
@@ -171,3 +170,4 @@ if __name__ == '__main__':
     downloader.split_train_valid(ratio=0.2)
 
     downloader.download_testset()
+    
