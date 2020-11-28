@@ -5,7 +5,7 @@
 - Due to the compatibility issue of the Openslide library, only installation in Ubuntu environment is now supported.
   We promise to support you on all platforms as soon as possible.
   
-It is not a stable project yet, so there maybe some minor|majgor bugs.
+It is not a stable project yet, so there maybe some minor|major bugs.
 We will provide a complete product in the near future, so we ask for your patience.
 
 ## Installation
@@ -71,7 +71,7 @@ tumor_coords = lesion_annots.filter_tumor_coords(save_dir='/path/to/save/tumor/c
 ## Sample train/valid patch images
 
 ```python
-from fake_doctors.sampling import 
+from fake_doctors.sampling import PatchSamplers
 
 num_train_patches = 2000000
 num_valid_patches = 20000
