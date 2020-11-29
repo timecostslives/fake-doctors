@@ -1,7 +1,9 @@
 import json
 import os
 import shutil
+import time
 from collections import defaultdict
+from zipfile import ZipFile
 
 import wget
 
@@ -9,7 +11,7 @@ import wget
 class Camelyon16:
     '''Camelyon16 dataset downloader'''
 
-    def __init__(self, urls_dir_in: str, wsi_dir_out: str) -> None:
+    def __init__(self, urls_dir_in: str, wsi_dir_out: str, annots_dir_out: str) -> None:
         '''Initialize Camelyon16.
 
         - Args
@@ -22,10 +24,14 @@ class Camelyon16:
         self.base_url = u'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100439/CAMELYON16'
         self.urls_dir_in = urls_dir_in
         self.wsi_dir_out = wsi_dir_out
+        self.annots_dir_out = annots_dir_out
 
         self.train_wsi_dir = os.path.join(self.wsi_dir_out, 'train')
         self.valid_wsi_dir = os.path.join(self.wsi_dir_out, 'valid')
-        self.test_wsi_dir = os.path.join(self.wsi_dir_out, 'test') 
+        self.test_wsi_dir = os.path.join(self.wsi_dir_out, 'test')
+
+        self.train_annots_dir = os.path.join(self.annots_dir_out, 'train')
+        self.test_annots_dir = os.path.join(self.annots_dir_out, 'test')
 
         # Do not use normal_86.tif, normal_144.tif
         self.train_wsi_range_dict = {
@@ -62,21 +68,47 @@ class Camelyon16:
         with open(train_wsi_urls_path, 'r', encoding='utf-8') as f:
             train_wsi_urls_dict = json.load(f)
 
+        # Download lesion_annotations.zip
+        annot_zip_fname = 'lesion_annotations.zip'
+        annot_zip_url = f'{self.base_url}/training/{annot_zip_fname}'
+        os.makedirs(self.train_annots_dir, exist_ok=True)
+        wget.download(url=annot_zip_url, out=self.train_annots_dir)
+
+        annot_zip_path = os.path.join(self.train_annots_dir, annot_zip_fname)
+        with ZipFile(annot_zip_path, 'r') as zf:
+            xml_annot_path = os.path.join(self.train_annots_dir, 'xml')
+            zf.extractall(xml_annot_path)
+        os.remove(annot_zip_path) # remove the lesion_annotations.zip file
+
         os.makedirs(self.train_wsi_dir, exist_ok=True)
         # Wsi file names in train wsi directory
-        wsi_fnames = os.listdir(self.train_wsi_dir)
+        # TODO: In-test code; repair this line if the behavior is wierd
+        # wsi_fnames = os.listdir(self.train_wsi_dir)
         for (class_, urls) in train_wsi_urls_dict.items():
-            dirname = f'{class_}'
+            dirname = class_
             # Path to the directory to save training wsi
-            train_wsi_dir_out = os.path.join(self.train_wsi_dir, dirname)
+            train_wsi_dir_out = os.path.join(self.train_wsi_dir, dirname) # (1)
+            # TODO: To save tumor/normal wsi separately, keep this code,
+            #       to save tumor/normal wsi together, remove `dirname` from (1)
+            os.makedirs(train_wsi_dir_out, exist_ok=True)
+            wsi_fnames = os.listdir(train_wsi_dir_out)
 
             # Download every wsi to the directory
             for url in urls:
                 wsi_fname = url.split('/')[-1]
                 if wsi_fname not in wsi_fnames:
-                    print(f'Start downloading {wsi_fname}')
-                    wget.download(url=url, out=train_wsi_dir_out)
-                    print('Completed!')
+                    print(f'\nStart downloading {wsi_fname}')
+                    print(f'Url: {url}')
+                    print(f'Save dir: {train_wsi_dir_out}')
+                    try:
+                        wget.download(url=url, out=train_wsi_dir_out)
+                    except Exception:
+                        print('FTP server is busy, try downloading after 10 sec')
+                        time.sleep(10)
+                        wget.download(url=url, out=train_wsi_dir_out)
+                    finally:
+                        print('Problem occured with Gigadb ftp server connection, \
+                               not the error of the program.\n Please try again after a while.')
 
     def download_testset(self) -> None:
         '''Download Camelyon16 test dataset'''
@@ -101,6 +133,18 @@ class Camelyon16:
         with open(test_wsi_urls_path, 'r', encoding='utf-8') as f:
             test_wsi_urls_dict = json.load(f)
 
+        # Download lesion_annotations.zip
+        annot_zip_fname = 'lesion_annotations.zip'
+        annot_zip_url = f'{self.base_url}/testing/{annot_zip_fname}'
+        os.makedirs(self.test_annots_dir, exist_ok=True)
+        wget.download(url=annot_zip_url, out=self.test_annots_dir)
+
+        annot_zip_path = os.path.join(self.test_annots_dir, annot_zip_fname)
+        with ZipFile(annot_zip_path, 'r') as zf:
+            xml_annot_path = os.path.join(self.test_annots_dir, 'xml')
+            zf.extractall(xml_annot_path)
+        os.remove(annot_zip_path) # remove lesion_annotations.zip file
+
         os.makedirs(self.test_wsi_dir, exist_ok=True)
         # Wsi file names in train wsi directory
         wsi_fnames = os.listdir(self.test_wsi_dir)
@@ -109,9 +153,21 @@ class Camelyon16:
         for url in test_wsi_urls:
             wsi_fname = url.split('/')[-1]
             if wsi_fname not in wsi_fnames:
-                print(f'Start downloading {wsi_fname}')
+                print(f'\nStart downloading {wsi_fname}')
                 wget.download(url=url, out=self.test_wsi_dir)
-                print('Completed!')
+
+                print(f'\nStart downloading {wsi_fname}')
+                print(f'Url: {url}')
+                print(f'Save dir: {self.test_wsi_dir}')
+                try:
+                    wget.download(url=url, out=self.test_wsi_dir)
+                except Exception:
+                    print('FTP server is busy, try downloading after 10 sec')
+                    time.sleep(10)
+                    wget.download(url=url, out=self.test_wsi_dir)
+                finally:
+                    print('Sorry, problem occured with GigaDB FTP server, \
+                           not the error of the program.\n Please try again after a while.')
 
     def split_train_valid(self, ratio: float = 0.2) -> None:
         '''Split training wsi into trainset/validset according to the given ratio
@@ -161,13 +217,14 @@ if __name__ == '__main__':
 
     ROOT_DIR = os.path.abspath('.')
     CACHES_DIR = os.path.join(ROOT_DIR, 'caches')
-    URLS_DIR = os.path.join(CACHES_DIR, 'download_urls')
+    ANNOTS_DIR = os.path.join(ROOT_DIR, 'annots')
+    URLS_DIR = os.path.join(CACHES_DIR, 'downloads')
     WSI_DIR = os.path.join(ROOT_DIR, 'wsi')
 
     downloader = Camelyon16(urls_dir_in=URLS_DIR,
-                            wsi_dir_out=WSI_DIR)
+                            wsi_dir_out=WSI_DIR,
+                            annots_dir_out=ANNOTS_DIR)
     downloader.download_trainset()
     downloader.split_train_valid(ratio=0.2)
 
     downloader.download_testset()
-    
