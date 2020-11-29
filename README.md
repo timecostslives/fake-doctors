@@ -2,7 +2,7 @@
 
 **Simple Deep learning tools for Bio-informatics & Digital Pathology.**
 
-- Due to the compatibility issue of the Openslide library, only installation in Ubuntu environment is now supported.
+- Due to the compatibility issue of the [Openslide library](https://github.com/openslide/openslide), only installation in Ubuntu environment is now supported.
   We promise to support you on all platforms as soon as possible.
   
 It is not a stable project yet, so there maybe some minor|major bugs.
@@ -13,7 +13,7 @@ We will provide a complete product in the near future, so we ask for your patien
 
 ## Download Datasets
 
-Now support only Camelyon16 whole slide image dataset(train/test).
+Now support only [Camelyon16](https://camelyon16.grand-challenge.org/Data/) whole slide image dataset(train/test).
 
 - **Warning:** There is an issue related to the [wget](https://pypi.org/project/wget/) library, so debugging is in progress.
 If it is confirmed that a problem with wget lib itself, we will migrate to a more stable library such as [requests](https://requests.readthedocs.io/en/master/).
